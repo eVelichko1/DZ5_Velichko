@@ -3,6 +3,8 @@ package ru.otus.homework.form.model;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 import org.apache.logging.log4j.LogManager;
@@ -20,6 +22,21 @@ public final class FormData {
     /** Значения по умолчанию для запуска из IDE, если параметры не переданы. */
     private static final String DEFAULT_LOGIN = "qa.user";
     private static final String DEFAULT_PASSWORD = "Secret123!";
+
+    /**
+     * После Submit на странице показывается {@code value} опции, не видимый текст.
+     * Ключ — код или название, значение — атрибут value из {@code <select id="country">}.
+     */
+    private static final Map<String, String> COUNTRY_VALUES = Map.ofEntries(
+            Map.entry("ar", "ar"),
+            Map.entry("argentina", "ar"),
+            Map.entry("de", "de"),
+            Map.entry("germany", "de"),
+            Map.entry("in", "in"),
+            Map.entry("india", "in"),
+            Map.entry("us", "us"),
+            Map.entry("united states", "us")
+    );
 
     private static final Properties FILE_CREDENTIALS = loadCredentialsFile();
 
@@ -80,7 +97,8 @@ public final class FormData {
                 .nickname("Katya")
                 .birthday("1995-03-12")
                 .age("29")
-                .country("Germany")
+                // На форме только: ar / de / in / us. После Submit приходит код (de), не "Germany"
+                .country(normalizeCountry("de"))
                 .languages(List.of("English", "German"))
                 .bio("QA automation engineer. Homework DZ5.")
                 .contact("email")
@@ -93,6 +111,25 @@ public final class FormData {
 
     public static Builder builder() {
         return new Builder();
+    }
+
+    /**
+     * Приводит название или код страны к value из выпадающего списка
+     * (именно оно попадает в таблицу после Submit).
+     */
+    public static String normalizeCountry(String country) {
+        if (country == null || country.isBlank()) {
+            throw new IllegalArgumentException("Страна не задана");
+        }
+        String key = country.trim().toLowerCase(Locale.ROOT);
+        String value = COUNTRY_VALUES.get(key);
+        if (value == null) {
+            throw new IllegalArgumentException(
+                    "Неизвестная страна '" + country + "'. Допустимо: ar/de/in/us "
+                            + "или Argentina/Germany/India/United States"
+            );
+        }
+        return value;
     }
 
     public void assertPasswordsMatch() {
@@ -279,7 +316,7 @@ public final class FormData {
         }
 
         public Builder country(String country) {
-            this.country = country;
+            this.country = normalizeCountry(country);
             return this;
         }
 
