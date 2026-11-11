@@ -19,9 +19,9 @@
         <assertj.version>3.27.7</assertj.version>
         <webdrivermanager.version>6.4.0</webdrivermanager.version>
         <log4j.version>2.26.1</log4j.version>
-        <!-- Параметры авторизации/формы передаются при старте: -Dlogin=... -Dpassword=... -->
-        <login></login>
-        <password></password>
+        <!-- Параметры авторизации/формы: переопределяются -Dlogin=... -Dpassword=... -->
+        <login>qa.user</login>
+        <password>Secret123!</password>
         <passwordConfirm></passwordConfirm>
         <selenium.remote.url></selenium.remote.url>
     </properties>
