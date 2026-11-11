@@ -63,8 +63,7 @@ public class LargeFormPage {
         setInputValue(BIRTHDAY, data.birthday());
         type(AGE, data.age());
 
-        Select country = new Select(wait.until(ExpectedConditions.elementToBeClickable(COUNTRY)));
-        country.selectByValue(data.country());
+        selectCountry(data.country());
 
         Select languages = new Select(wait.until(ExpectedConditions.visibilityOfElementLocated(LANGUAGES)));
         languages.deselectAll();
@@ -116,6 +115,19 @@ public class LargeFormPage {
         scrollIntoView(element);
         element.clear();
         element.sendKeys(value);
+    }
+
+    /**
+     * Доступные value на SUT: {@code ar}, {@code de}, {@code in}, {@code us}.
+     * Сначала value, иначе видимый текст (Argentina, Germany, India, United States).
+     */
+    private void selectCountry(String country) {
+        Select select = new Select(wait.until(ExpectedConditions.elementToBeClickable(COUNTRY)));
+        try {
+            select.selectByValue(country);
+        } catch (org.openqa.selenium.NoSuchElementException ignored) {
+            select.selectByVisibleText(country);
+        }
     }
 
     private void setRangeValue(String value) {
