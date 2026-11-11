@@ -7,17 +7,33 @@
 
 ## Запуск
 
-Логин и пароль **не зашиты в код** — передаются параметрами:
+Логин и пароль **не зашиты в Java-код** — задаются параметрами при старте
+(или берутся из `src/test/resources/credentials.properties`).
+
+### Maven
 
 ```bash
 mvn test -Dlogin=qa.user -Dpassword=Secret123!
 ```
 
-Опционально явно задать подтверждение пароля (по умолчанию равно `password`):
+Без `-D` тоже запустится: значения подставятся из `credentials.properties` / pom.
+
+Опционально подтверждение пароля (по умолчанию равно `password`):
 
 ```bash
 mvn test -Dlogin=qa.user -Dpassword=Secret123! -DpasswordConfirm=Secret123!
 ```
+
+### IntelliJ IDEA
+
+1. Run → Edit Configurations → ваш `LargeFormTest`
+2. **VM options:**
+   ```
+   -Dlogin=qa.user -Dpassword=Secret123!
+   ```
+3. Apply → Run
+
+Если VM options не заданы, тест возьмёт логин/пароль из `credentials.properties`.
 
 WebDriver скачивается автоматически (WebDriverManager). Chrome должен быть установлен в системе.
 
