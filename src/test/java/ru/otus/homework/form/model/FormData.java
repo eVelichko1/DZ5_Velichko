@@ -80,6 +80,7 @@ public final class FormData {
                 .nickname("Katya")
                 .birthday("1995-03-12")
                 .age("29")
+                // На форме только: ar / de / in / us (Belarus нет)
                 .country("de")
                 .languages(List.of("English", "German"))
                 .bio("QA automation engineer. Homework DZ5.")
