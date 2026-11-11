@@ -1,13 +1,27 @@
 package ru.otus.homework.form.model;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 import java.util.Objects;
+import java.util.Properties;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Данные для заполнения large_form.
- * Логин и пароль приходят из системных свойств при старте теста.
+ * Логин и пароль передаются параметрами при старте ({@code -Dlogin}, {@code -Dpassword}),
+ * либо через переменные окружения / {@code credentials.properties}.
  */
 public final class FormData {
+
+    private static final Logger log = LogManager.getLogger(FormData.class);
+
+    /** Значения по умолчанию для запуска из IDE, если параметры не переданы. */
+    private static final String DEFAULT_LOGIN = "qa.user";
+    private static final String DEFAULT_PASSWORD = "Secret123!";
+
+    private static final Properties FILE_CREDENTIALS = loadCredentialsFile();
 
     private final String firstName;
     private final String lastName;
@@ -46,12 +60,14 @@ public final class FormData {
     }
 
     public static FormData fromSystemProperties() {
-        String login = requiredProperty("login");
-        String password = requiredProperty("password");
-        String passwordConfirm = System.getProperty("passwordConfirm");
-        if (passwordConfirm == null || passwordConfirm.isBlank()) {
-            passwordConfirm = password;
-        }
+        String login = resolveCredential("login", "LOGIN", DEFAULT_LOGIN);
+        String password = resolveCredential("password", "PASSWORD", DEFAULT_PASSWORD);
+        String passwordConfirm = firstNonBlank(
+                System.getProperty("passwordConfirm"),
+                System.getenv("PASSWORD_CONFIRM"),
+                FILE_CREDENTIALS.getProperty("passwordConfirm"),
+                password
+        );
 
         String email = login.contains("@") ? login : login + "@example.com";
 
@@ -152,15 +168,56 @@ public final class FormData {
         return acceptTerms;
     }
 
-    private static String requiredProperty(String name) {
-        String value = System.getProperty(name);
-        if (value == null || value.isBlank()) {
-            throw new IllegalArgumentException(
-                    "Не задан обязательный параметр -D" + name
-                            + ". Пример: mvn test -Dlogin=user -Dpassword=Secret123"
-            );
+    /**
+     * Приоритет: {@code -D} → переменная окружения → credentials.properties → значение по умолчанию.
+     */
+    private static String resolveCredential(String systemProperty, String envName, String defaultValue) {
+        String fromSystem = System.getProperty(systemProperty);
+        if (fromSystem != null && !fromSystem.isBlank()) {
+            log.info("Параметр {} взят из -D{}", systemProperty, systemProperty);
+            return fromSystem.trim();
         }
-        return value.trim();
+
+        String fromEnv = System.getenv(envName);
+        if (fromEnv != null && !fromEnv.isBlank()) {
+            log.info("Параметр {} взят из переменной окружения {}", systemProperty, envName);
+            return fromEnv.trim();
+        }
+
+        String fromFile = FILE_CREDENTIALS.getProperty(systemProperty);
+        if (fromFile != null && !fromFile.isBlank()) {
+            log.info("Параметр {} взят из credentials.properties", systemProperty);
+            return fromFile.trim();
+        }
+
+        log.info(
+                "Параметр {} не передан — используется значение по умолчанию. "
+                        + "Для сдачи/проверки задайте -D{}=... или VM options в IDEA",
+                systemProperty,
+                systemProperty
+        );
+        return defaultValue;
+    }
+
+    private static String firstNonBlank(String... values) {
+        for (String value : values) {
+            if (value != null && !value.isBlank()) {
+                return value.trim();
+            }
+        }
+        return null;
+    }
+
+    private static Properties loadCredentialsFile() {
+        Properties properties = new Properties();
+        try (InputStream in = FormData.class.getClassLoader().getResourceAsStream("credentials.properties")) {
+            if (in != null) {
+                properties.load(in);
+            }
+        } catch (IOException e) {
+            log.warn("Не удалось прочитать credentials.properties: {}", e.getMessage());
+        }
+        return properties;
     }
 
     public static final class Builder {
